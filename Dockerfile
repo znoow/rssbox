@@ -22,6 +22,7 @@ LABEL org.opencontainers.image.authors="Stefan Sundin"
 LABEL org.opencontainers.image.url="https://github.com/stefansundin/rssbox"
 
 # install system utilities that are useful when debugging
+USER root
 RUN \
   apt-get update && \
   apt-get upgrade -y && \
@@ -34,17 +35,13 @@ WORKDIR /app
 COPY Gemfile Gemfile.lock ./
 RUN bundle config set --local without development:test
 RUN bundle config set --local deployment 'true'
+RUN bundle config set --local frozen 'false'
 RUN bundle install --retry=3 --jobs=4
 COPY . .
 RUN find -not -path './vendor/*'
 
 # Disable irb history to prevent .irb_history permission error from showing
 RUN echo "IRB.conf[:SAVE_HISTORY] = nil" >> .irbrc
-
-# Run the container as an unprivileged user
-RUN mkdir -p tmp
-RUN chown nobody:nogroup tmp
-USER nobody:nogroup
 
 EXPOSE 3000
 ENV PORT=3000
