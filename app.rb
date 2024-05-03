@@ -431,7 +431,7 @@ get "/youtube/:channel_id/:username.ics" do |channel_id, username|
   @username = username
   @title = "#{username} on YouTube"
 
-  data, _ = App::Cache.cache("youtube.ics", channel_id, 60*60, 60) do
+  data, _ = App::Cache.cache("youtube.ics", channel_id, 30, 30) do
     # The API is really inconsistent in listing scheduled live streams, but the RSS endpoint seems to consistently list them, so experiment with using that
     response = App::HTTP.get("https://www.youtube.com/feeds/videos.xml?channel_id=#{channel_id}")
     next "Error: This channel no longer exists or has no videos." if response.code == 404
@@ -503,7 +503,7 @@ get "/youtube/:channel_id/:username" do |channel_id, username|
 
   data, @updated_at = App::Cache.cache("youtube.videos", channel_id, 60*60, 60) do
     # The results from this query are not sorted by publishedAt for whatever reason.. probably due to some uploads being scheduled to be published at a certain time
-    response = App::YouTube.get("/playlistItems", query: { part: "snippet", playlistId: playlist_id, maxResults: 10 })
+    response = App::YouTube.get("/playlistItems", query: { part: "snippet", playlistId: playlist_id, maxResults: 5 })
     next "Error: This channel no longer exists or has no videos." if response.code == 404
     raise(App::GoogleError, response) if !response.success?
     ids = response.json["items"].sort_by { |v| Time.parse(v["snippet"]["publishedAt"]) }.reverse.map { |v| v["snippet"]["resourceId"]["videoId"] }
@@ -689,7 +689,7 @@ get %r{/instagram/(?<user_id>\d+)/(?<username>.+)} do |user_id, username|
   @user_id = user_id
   @user = CGI.unescape(username)
 
-  data, @updated_at = App::Cache.cache("instagram.posts", user_id, 4*60*60, 60*60) do
+  data, @updated_at = App::Cache.cache("instagram.posts", user_id, 30*60, 30*60) do
     # To find the query_hash, simply use the Instagram website and monitor the network calls.
     # This request in particular is the one that gets the next page when you scroll down on a profile, but we change it to get the first 12 posts instead of the second or third page.
     response = App::Instagram.get("/graphql/query/", {
